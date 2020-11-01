@@ -1,0 +1,50 @@
+service: zworker
+
+frameworkVersion: '2'
+
+vpcConfiguration: &vpcConfiguration
+  securityGroupIds:
+    - ${ssm:/zworker/SECURITY_GROUP_ID}
+  subnetIds:
+    - ${ssm:/zworker/PRIVATE_SUBNET_A}
+    - ${ssm:/zworker/PRIVATE_SUBNET_B}
+    - ${ssm:/zworker/PRIVATE_SUBNET_C}
+
+fileSystemConfiguration: &fileSystemConfiguration
+  localMountPath: ${ssm:/zworker/LOCAL_MOUNT_PATH}
+  arn: ${ssm:/zworker/EFS_ARN}
+
+package:
+  exclude:
+    - 'node_modules/**'
+
+custom:
+  dotenv:
+    basePath: ./
+
+plugins:
+  - serverless-plugin-existing-s3
+  - serverless-dotenv-plugin
+  - serverless-offline # This should be the last in the list
+  - serverless-step-functions
+  - serverless-pseudo-parameters
+  - serverless-functions-base-path
+
+provider:
+  name: aws
+  runtime: python3.8
+  memorySize: ${ssm:/zworker/MEMORY_SIZE , 1024} # optional, in MB, default is 1024
+  timeout: ${ssm:/zworker/TIMEOUT, 90}
+  role: zWorkerProcessDocumentLambdaRole
+  versionFunctions: false
+
+resources:
+  - ${file(./config/resources/template/template.yml)}
+
+functions:
+  zWorkerProcessOutput:
+    handler: handler.lambda_handler
+    # vpc:
+    #   <<: *vpcConfiguration
+    # fileSystemConfig:
+    #   <<: *fileSystemConfiguration

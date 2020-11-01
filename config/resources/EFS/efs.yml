@@ -1,0 +1,14 @@
+Resources:
+    EFSFileSystem:
+        Type: "AWS::EFS::FileSystem"
+        Properties:
+            PerformanceMode: "generalPurpose"
+            Encrypted: true
+            ThroughputMode: "bursting"
+            FileSystemTags: 
+              - 
+                Key: "Name"
+                Value: zWorker-process-document-${env:STAGE, "dev"}-shared
+              - 
+                Key: "aws:elasticfilesystem:default-backup"
+                Value: "enabled"
