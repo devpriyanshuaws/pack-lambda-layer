@@ -78,7 +78,7 @@ Resources:
                 ActionMode: REPLACE_ON_FAILURE
                 StackName: !Ref AWS::StackName
                 RoleArn: '{{resolve:ssm:zworker_pipeline_role_arn:3}}'
-                TemplatePath: SourceArtifact::codepipeline/resources/template/template.yml
+                TemplatePath: SourceArtifact::config/resources/template/template.yml
                 Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
           
           - Name: "TestBuild"
