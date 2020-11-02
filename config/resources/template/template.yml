@@ -61,25 +61,25 @@ Resources:
                   OAuthToken: '{{resolve:secretsmanager:ZWORKER_GITHUB:SecretString:zworkerGithubAccessToken}}'
                 RunOrder: 1
     
-          - Name: "SelfUpdateBuild"
-            Actions:
-            - Name: "SelfUpdateStack"
-              InputArtifacts: 
-                - Name: "SourceArtifact"
-              OutputArtifacts:
-                - Name: "SelfUpdateArtifact"
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Version: "1"
-                Provider: CloudFormation
-              RunOrder: 1
-              Configuration:
-                ActionMode: REPLACE_ON_FAILURE
-                StackName: !Ref AWS::StackName
-                RoleArn: '{{resolve:ssm:zworker_pipeline_role_arn:3}}'
-                TemplatePath: SourceArtifact::config/resources/template/template.yml
-                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+          # - Name: "SelfUpdateBuild"
+          #   Actions:
+          #   - Name: "SelfUpdateStack"
+          #     InputArtifacts: 
+          #       - Name: "SourceArtifact"
+          #     OutputArtifacts:
+          #       - Name: "SelfUpdateArtifact"
+          #     ActionTypeId:
+          #       Category: Deploy
+          #       Owner: AWS
+          #       Version: "1"
+          #       Provider: CloudFormation
+          #     RunOrder: 1
+          #     Configuration:
+          #       ActionMode: REPLACE_ON_FAILURE
+          #       StackName: !Ref AWS::StackName
+          #       RoleArn: '{{resolve:ssm:zworker_pipeline_role_arn:3}}'
+          #       TemplatePath: SourceArtifact::config/resources/template/template.yml
+          #       Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
           
           - Name: "TestBuild"
             Actions:
