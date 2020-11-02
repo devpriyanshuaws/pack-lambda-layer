@@ -10,12 +10,12 @@ phases:
       - ln -s /usr/lib64/libhunspell-1.3.so /usr/lib64/libhunspell.so
       - ls
       - python -m pip install pipenv
-      - cd /mnt
+      - pipenv install
+      - cp -r $(pipenv --venv)/ /mnt/
       - ls
       - cd ../
 
   build:
     commands:
       - python --version 
-      - pipenv install
       - echo "Done!"
