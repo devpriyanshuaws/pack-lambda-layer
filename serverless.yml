@@ -1,18 +1,6 @@
-service: zworker
+service: zworker-binaries
 
 frameworkVersion: '2'
-
-vpcConfiguration: &vpcConfiguration
-  securityGroupIds:
-    - ${ssm:/zworker/SECURITY_GROUP_ID}
-  subnetIds:
-    - ${ssm:/zworker/PRIVATE_SUBNET_A}
-    - ${ssm:/zworker/PRIVATE_SUBNET_B}
-    - ${ssm:/zworker/PRIVATE_SUBNET_C}
-
-fileSystemConfiguration: &fileSystemConfiguration
-  localMountPath: ${ssm:/zworker/LOCAL_MOUNT_PATH}
-  arn: ${ssm:/zworker/EFS_ARN}
 
 package:
   exclude:
@@ -40,11 +28,3 @@ provider:
 
 resources:
   - ${file(./config/resources/template/template.yml)}
-
-functions:
-  zWorkerProcessOutput:
-    handler: handler.lambda_handler
-    # vpc:
-    #   <<: *vpcConfiguration
-    # fileSystemConfig:
-    #   <<: *fileSystemConfiguration

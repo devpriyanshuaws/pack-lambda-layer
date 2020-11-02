@@ -1,303 +1,98 @@
 Resources:
-    #Roles
-    StepFunctionRole:
-      Type: AWS::IAM::Role
+    PackBinariesProject:
+      Type: "AWS::CodeBuild::Project"
       Properties:
-        AssumeRolePolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Principal:
-                Service:
-                  - states.amazonaws.com
-              Action: sts:AssumeRole
-        ManagedPolicyArns:
-          - arn:aws:iam::aws:policy/AWSLambdaFullAccess
-          - !Ref XrayManagedPolicy
-          - !Ref SQSSendMessageScopedAccessPolicy
-          - !Ref SnsPublishScopedAccessPolicy
-          - !Ref CloudWatchLogsDeliveryFullAccessPolicy
-  
-    zWorkerProcessDocumentLambdaRole:
-      Type: AWS::IAM::Role
-      Properties:
-        AssumeRolePolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Principal:
-                Service:
-                  - lambda.amazonaws.com
-              Action: sts:AssumeRole
-        ManagedPolicyArns:
-          - "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
-          - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
-          - "arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess"
-          - arn:aws:iam::aws:policy/AWSLambdaFullAccess
-#Policy
-    XrayManagedPolicy:
-        Type: "AWS::IAM::ManagedPolicy"
-        Properties:
-            Path: "/service-role/"
-            PolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                - Effect: Allow  
-                  Action:
-                    - xray:PutTraceSegments
-                    - xray:PutTelemetryRecords
-                    - xray:GetSamplingRules
-                    - xray:GetSamplingTargets
-                  Resource: '*'
-
-    SQSSendMessageScopedAccessPolicy:
-        Type: "AWS::IAM::ManagedPolicy"
-        Properties:
-            Path: "/service-role/"
-            PolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                - Effect: Allow  
-                  Action:
-                    - sqs:SendMessage
-                  Resource: '*'
-                
-    SnsPublishScopedAccessPolicy:
-        Type: "AWS::IAM::ManagedPolicy"
-        Properties:
-            Path: "/service-role/"
-            PolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                - Effect: Allow  
-                  Action:
-                    - sns:Publish
-                  Resource: '*'
-             
-    CloudWatchLogsDeliveryFullAccessPolicy:
-        Type: "AWS::IAM::ManagedPolicy"
-        Properties:
-            Path: "/service-role/"
-            PolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                - Effect: Allow  
-                  Action:
-                    - logs:CreateLogDelivery
-                    - logs:GetLogDelivery
-                    - logs:UpdateLogDelivery
-                    - logs:DeleteLogDelivery
-                    - logs:ListLogDeliveries
-                    - logs:PutResourcePolicy
-                    - logs:DescribeResourcePolicies
-                    - logs:DescribeLogGroups
-                  Resource: '*'
-
-  # DynamodbTable
-    TextractResultsTable:
-      Type: 'AWS::DynamoDB::Table'
-      Properties:
-        TableName: zWorker-textractresults-${env:STAGE}
-        AttributeDefinitions:
-          - AttributeName: job_id
-            AttributeType: S
-        KeySchema:
-          - AttributeName: job_id
-            KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 5
-          WriteCapacityUnits: 5
-  #LogGroup
-    StepFunctionsStateMachineLogGroup:
-      Type: "AWS::Logs::LogGroup"
-
-  #SQS
-    zWorkerZudelloResultQueue:
-        Type: "AWS::SQS::Queue"
-        Properties:
-            DelaySeconds: "0"
-            MaximumMessageSize: "262144"
-            MessageRetentionPeriod: "345600"
-            ReceiveMessageWaitTimeSeconds: "0"
-            VisibilityTimeout: "30"
-            QueueName: zWorkerZudelloResult-${env:STAGE}
-
-    zWorkerDocumentProcessFailedQueue:
-        Type: "AWS::SQS::Queue"
-        Properties:
-            DelaySeconds: "0"
-            MaximumMessageSize: "262144"
-            MessageRetentionPeriod: "345600"
-            ReceiveMessageWaitTimeSeconds: "0"
-            VisibilityTimeout: "30"
-            QueueName: zWorkerDocumentProcessFailed-${env:STAGE}
-
-    zWorkerProcessDocumentOutputFailedQueue:
-        Type: "AWS::SQS::Queue"
-        Properties:
-            DelaySeconds: "0"
-            MaximumMessageSize: "262144"
-            MessageRetentionPeriod: "345600"
-            ReceiveMessageWaitTimeSeconds: "0"
-            VisibilityTimeout: "30"
-            QueueName: zWorkerProcessDocumentOutputFailed-${env:STAGE}
-
-    zWorkerZudelloUploadQueue:
-        Type: "AWS::SQS::Queue"
-        Properties:
-            DelaySeconds: "0"
-            MaximumMessageSize: "262144"
-            MessageRetentionPeriod: "345600"
-            ReceiveMessageWaitTimeSeconds: "0"
-            VisibilityTimeout: "300"
-            QueueName: zWorkerZudelloUpload-${env:STAGE}
-
-    zWorkerTextractQueue:
-        Type: "AWS::SQS::Queue"
-        Properties:
-            DelaySeconds: "0"
-            MaximumMessageSize: "262144"
-            MessageRetentionPeriod: "345600"
-            ReceiveMessageWaitTimeSeconds: "0"
-            VisibilityTimeout: "30"
-            QueueName: zWorkerTextract-${env:STAGE}
+        ServiceRole: '{{resolve:ssm:zworker_codebuild_role_arn:1}}'
+        Artifacts:
+          Type: CODEPIPELINE
+        Environment:
+          Type: "LINUX_CONTAINER"
+          ComputeType: "BUILD_GENERAL1_SMALL"
+          Image: "aws/codebuild/amazonlinux2-x86_64-standard:3.0"
+          ImagePullCredentialsType: "CODEBUILD"
+          PrivilegedMode: false
+          EnvironmentVariables:
+            - 
+              Name: "ACCOUNT_ROLE_ARN"
+              Type: "PARAMETER_STORE"
+              Value: "zworker_development_cloudformation_role_arn"
+            - 
+              Name: "STAGE"
+              Type: "PARAMETER_STORE"
+              Value: "/zworker/DEV_STAGE"
+            - 
+              Name: "REGION"
+              Type: "PARAMETER_STORE"
+              Value: "/zworker/DEV_REGION"
+        LogsConfig:
+          CloudWatchLogs:
+            Status: "ENABLED"
+        Source:
+          Type: "CODEPIPELINE"
+          InsecureSsl: false
+          BuildSpec: "buildspec.yml"
     
-    zWorkerProcessDocumentDLQ:
-        Type: "AWS::SQS::Queue"
-        Properties:
-            DelaySeconds: "0"
-            MaximumMessageSize: "262144"
-            MessageRetentionPeriod: "345600"
-            ReceiveMessageWaitTimeSeconds: "0"
-            VisibilityTimeout: "30"
-            QueueName: zWorkerProcessDocumentDLQ-${env:STAGE}
-
-    #Topics
-    zWorkerProcessDocumentFailedTopic:
-      Type: AWS::SNS::Topic
-      Properties:
-        Tags: 
-          - Key: Name
-            Value: zWorkerProcessDocumentFailed-${env:STAGE}
-    zWorkerProcessOutputFailedTopic:
-      Type: AWS::SNS::Topic
-      Properties:
-        Tags: 
-          - Key: Name
-            Value: zWorkerProcessOutputFailed-${env:STAGE}
-    zWorkerTextractResultsTopic:
-      Type: AWS::SNS::Topic
-      Properties:
-        Tags: 
-          - Key: Name
-            Value: zWorkerTextractResults-${env:STAGE}
-    zWorkerZudelloResultsTopic:
-      Type: AWS::SNS::Topic
-      Properties:
-        Tags: 
-          - Key: Name
-            Value: zWorkerZudelloResults-${env:STAGE}
-  
-  #Subscription
-    zWorkerTextractSubscription:
-      Type: "AWS::SNS::Subscription"
-      Properties:
-          TopicArn: !Ref zWorkerTextractResultsTopic
-          Endpoint: !GetAtt zWorkerTextractQueue.Arn
-          Protocol: "sqs"
-          RawMessageDelivery: "false"
-          Region: !Ref AWS::Region
-    zWorkerZudelloResultsSubscription:
-      Type: "AWS::SNS::Subscription"
-      Properties:
-          TopicArn: !Ref zWorkerZudelloResultsTopic
-          Endpoint: !GetAtt zWorkerZudelloResultQueue.Arn
-          Protocol: "sqs"
-          RawMessageDelivery: "false"
-          Region: !Ref AWS::Region
-    zWorkerProcessOutputFailed:
-      Type: "AWS::SNS::Subscription"
-      Properties:
-          TopicArn: !Ref zWorkerProcessOutputFailedTopic
-          Endpoint: !GetAtt zWorkerDocumentProcessFailedQueue.Arn
-          Protocol: "sqs"
-          RawMessageDelivery: "false"
-          Region: !Ref AWS::Region
-  
-  #StepFunction
-    StepFunctionsStateMachine:
-        Type: "AWS::StepFunctions::StateMachine"
-        Properties:
-            StateMachineName: zWorkerStateMachine-${env:STAGE}
-            DefinitionString: !Sub |
-                {
-                  "Comment": "Zworker state machine",
-                  "StartAt": "Process Document",
-                  "States": {
-                    "Process Document": {
-                      "Type": "Task",
-                      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
-                      "Parameters": {
-                        "QueueUrl": "${zWorkerZudelloUploadQueue}",
-                        "MessageBody": {
-                          "MessageTitle": "Task started by Step Functions. Waiting for callback with task token.",
-                          "ExecutionInput.$": "$$.Execution.Input",
-                          "TaskToken.$": "$$.Task.Token"
-                        }
-                      },
-                      "Next": "Process Document Output",
-                      "Catch": [
-                      {
-                        "ErrorEquals": [ "States.ALL" ],
-                        "Next": "Process Document Failure"
-                      }
-                      ]
-                    },
-                    "Process Document Output": {
-                       "Type":"Task",
-                       "Resource":"${ZWorkerProcessOutputLambdaFunction.Arn}",
-                       "End": true,
-                       "Catch": [
-                       {
-                         "ErrorEquals": [ "States.ALL" ],
-                         "Next": "Process Document Output Failure"
-                       }
-                       ]      
-                    },
-                    "Process Document Failure": {
-                      "Type": "Task",
-                      "Resource": "arn:aws:states:::sns:publish",
-                      "Parameters": {
-                        "Message": "Task started by Step Functions failed.",
-                        "TopicArn": "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${zWorkerProcessDocumentFailedTopic}"
-                      },
-                      "End": true
-                    },
-                    "Process Document Output Failure": {
-                      "Type": "Task",
-                      "Resource": "arn:aws:states:::sns:publish",
-                      "Parameters": {
-                        "Message": "Task started by Step Functions failed.",
-                        "TopicArn": "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${zWorkerProcessOutputFailedTopic}"
-                      },
-                      "End": true
-                    }    
-                  }
-                }
-            RoleArn: !GetAtt StepFunctionRole.Arn
-            StateMachineType: "STANDARD"
-            LoggingConfiguration: 
-                Destinations: 
-                  - 
-                    CloudWatchLogsLogGroup: 
-                        LogGroupArn: !GetAtt StepFunctionsStateMachineLogGroup.Arn
-                IncludeExecutionData: true
-                Level: "ALL"
-  
+    zWorkerBinaryPipeline: 
+      Type: "AWS::CodePipeline::Pipeline"
+      Properties: 
+        RoleArn: '{{resolve:ssm:zworker_pipeline_role_arn:3}}'
+        ArtifactStore: 
+          Type: S3 
+          Location: '{{resolve:ssm:zworker_pipeline_bucket_name:2}}'
+          EncryptionKey:
+            Type: KMS
+            Id: '{{resolve:ssm:zworker_pipeline_kms_key_arn:3}}'
+        Stages:
+          - Name: Source
+            Actions:
+              - Name: Source1
+                ActionTypeId:
+                  Category: Source
+                  Owner: ThirdParty
+                  Version: "1"
+                  Provider: GitHub
+                Namespace: SourceVariables
+                OutputArtifacts:
+                  - Name: SourceArtifact
+                Configuration:
+                  Owner: 'priyanshu'
+                  Repo: 'pack-lambda-layer'
+                  Branch: 'main'
+                  OAuthToken: '{{resolve:secretsmanager:ZWORKER_GITHUB:SecretString:zworkerGithubAccessToken}}'
+                RunOrder: 1
     
-
-
-    
-
-
-    
+          - Name: "SelfUpdateBuild"
+            Actions:
+            - Name: "SelfUpdateStack"
+              InputArtifacts: 
+                - Name: "SourceArtifact"
+              OutputArtifacts:
+                - Name: "SelfUpdateArtifact"
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: "1"
+                Provider: CloudFormation
+              RunOrder: 1
+              Configuration:
+                ActionMode: REPLACE_ON_FAILURE
+                StackName: !Ref AWS::StackName
+                RoleArn: '{{resolve:ssm:zworker_pipeline_role_arn:3}}'
+                TemplatePath: SourceArtifact::codepipeline/resources/template/template.yml
+                Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+          
+          - Name: "TestBuild"
+            Actions:
+            - Name: "TestBuild"
+              InputArtifacts: 
+                - Name: "SourceArtifact"
+              OutputArtifacts:
+                - Name: "TestArtifact"
+              ActionTypeId:
+                Version: '1'
+                Owner: "AWS"
+                Category: "Build"
+                Provider: "CodeBuild"
+              RunOrder: 1
+              Configuration:
+                ProjectName: !Ref PackBinariesProject
