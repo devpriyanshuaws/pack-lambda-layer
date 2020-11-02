@@ -55,7 +55,7 @@ Resources:
                 OutputArtifacts:
                   - Name: SourceArtifact
                 Configuration:
-                  Owner: 'priyanshu'
+                  Owner: 'devpriyanshuaws'
                   Repo: 'pack-lambda-layer'
                   Branch: 'main'
                   OAuthToken: '{{resolve:secretsmanager:ZWORKER_GITHUB:SecretString:zworkerGithubAccessToken}}'
