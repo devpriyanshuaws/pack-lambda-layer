@@ -14,7 +14,7 @@ phases:
       - ls
       - python -m pip install pipenv
       - pipenv install
-      - cp -r $(pipenv --venv)/ /mnt/
+      - cp -r $(pipenv --venv)/ /efs/
       - ls
       - cd ../
 
