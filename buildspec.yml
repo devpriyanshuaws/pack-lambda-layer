@@ -5,7 +5,7 @@ phases:
     commands:
       - mkdir efs
       - yum install -y amazon-efs-utils
-      - sudo mount -t efs -o tls fs-c9fa29f1:/ efs
+      - mount -t efs -o tls fs-c9fa29f1:/ efs
       - yum install -y amazon-linux-extras
       - yum -y install openjpeg-devel libjpeg-devel fontconfig-devel libtiff-devel libpng-devel xz gcc gcc-c++ epel-release zip cmake3 hunspell-devel python38-devel poppler-utils poppler-cpp-devel make autoconf aclocal automake libtool libjpeg-devel libpng-devel libtiff-devel zlib-devel ibzip-devel freetype-devel lcms2-devel libwebp-devel tcl-devel tk-devel ImageMagick ImageMagick-devel
       - yum -y groupinstall "Development Tools"
