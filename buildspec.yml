@@ -15,6 +15,7 @@ phases:
       - python -m pip install pipenv
       - pipenv install
       - cp -r $(pipenv --venv)/ /efs/
+      - cd efs
       - ls
       - cd ../
 
