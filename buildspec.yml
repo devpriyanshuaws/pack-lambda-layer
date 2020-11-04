@@ -14,7 +14,8 @@ phases:
       - ls
       - python -m pip install pipenv
       - pipenv install
-      - cp -r $(pipenv --venv)/ /efs/
+      - cp -r $(pipenv --venv)/ efs
+      - cp buildspec.yml efs
       - cd efs
       - ls
       - cd ../
