@@ -6,7 +6,9 @@ phases:
       - mkdir efs
       - yum install -y amazon-efs-utils
       - mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport 10.0.54.155:/ efs
+      - cd efs
       - ls
+      - cd ../
       - yum install -y amazon-linux-extras
       - yum -y install openjpeg-devel libjpeg-devel fontconfig-devel libtiff-devel libpng-devel xz gcc gcc-c++ epel-release zip cmake3 hunspell-devel python38-devel poppler-utils poppler-cpp-devel make autoconf aclocal automake libtool libjpeg-devel libpng-devel libtiff-devel zlib-devel ibzip-devel freetype-devel lcms2-devel libwebp-devel tcl-devel tk-devel ImageMagick ImageMagick-devel
       - yum -y groupinstall "Development Tools"
