@@ -1,5 +1,5 @@
 Resources:
-    PackBinariesProject:
+    PackDevBinariesProject:
       Type: "AWS::CodeBuild::Project"
       Properties:
         ServiceRole: '{{resolve:ssm:zworker_codebuild_role_arn:1}}'
@@ -10,12 +10,78 @@ Resources:
           ComputeType: "BUILD_GENERAL1_SMALL"
           Image: "aws/codebuild/amazonlinux2-x86_64-standard:3.0"
           ImagePullCredentialsType: "CODEBUILD"
-          PrivilegedMode: false
+          PrivilegedMode: true
           EnvironmentVariables:
             - 
-              Name: "ACCOUNT_ROLE_ARN"
+              Name: "EFS_MOUNT_IP"
               Type: "PARAMETER_STORE"
-              Value: "zworker_development_cloudformation_role_arn"
+              Value: "zworker_development_efs_mount_ip"
+            - 
+              Name: "STAGE"
+              Type: "PARAMETER_STORE"
+              Value: "/zworker/DEV_STAGE"
+            - 
+              Name: "REGION"
+              Type: "PARAMETER_STORE"
+              Value: "/zworker/DEV_REGION"
+        LogsConfig:
+          CloudWatchLogs:
+            Status: "ENABLED"
+        Source:
+          Type: "CODEPIPELINE"
+          InsecureSsl: false
+          BuildSpec: "buildspec.yml"
+
+    PackProductionBinariesProject:
+      Type: "AWS::CodeBuild::Project"
+      Properties:
+        ServiceRole: '{{resolve:ssm:zworker_codebuild_role_arn:1}}'
+        Artifacts:
+          Type: CODEPIPELINE
+        Environment:
+          Type: "LINUX_CONTAINER"
+          ComputeType: "BUILD_GENERAL1_SMALL"
+          Image: "aws/codebuild/amazonlinux2-x86_64-standard:3.0"
+          ImagePullCredentialsType: "CODEBUILD"
+          PrivilegedMode: true
+          EnvironmentVariables:
+            - 
+              Name: "EFS_MOUNT_IP"
+              Type: "PARAMETER_STORE"
+              Value: "zworker_production_efs_mount_ip"
+            - 
+              Name: "STAGE"
+              Type: "PARAMETER_STORE"
+              Value: "/zworker/DEV_STAGE"
+            - 
+              Name: "REGION"
+              Type: "PARAMETER_STORE"
+              Value: "/zworker/DEV_REGION"
+        LogsConfig:
+          CloudWatchLogs:
+            Status: "ENABLED"
+        Source:
+          Type: "CODEPIPELINE"
+          InsecureSsl: false
+          BuildSpec: "buildspec.yml"
+
+    PackTestBinariesProject:
+      Type: "AWS::CodeBuild::Project"
+      Properties:
+        ServiceRole: '{{resolve:ssm:zworker_codebuild_role_arn:1}}'
+        Artifacts:
+          Type: CODEPIPELINE
+        Environment:
+          Type: "LINUX_CONTAINER"
+          ComputeType: "BUILD_GENERAL1_SMALL"
+          Image: "aws/codebuild/amazonlinux2-x86_64-standard:3.0"
+          ImagePullCredentialsType: "CODEBUILD"
+          PrivilegedMode: true
+          EnvironmentVariables:
+            - 
+              Name: "EFS_MOUNT_IP"
+              Type: "PARAMETER_STORE"
+              Value: "zworker_test_efs_mount_ip"
             - 
               Name: "STAGE"
               Type: "PARAMETER_STORE"
@@ -81,7 +147,39 @@ Resources:
           #       TemplatePath: SourceArtifact::config/resources/template/template.yml
           #       Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
           
-          - Name: "TestBuild"
+          - Name: "DevPackageBinaries"
+            Actions:
+            - Name: "DevPackageBinaries"
+              InputArtifacts: 
+                - Name: "SourceArtifact"
+              OutputArtifacts:
+                - Name: "DevPackageBinariesArtifact"
+              ActionTypeId:
+                Version: '1'
+                Owner: "AWS"
+                Category: "Build"
+                Provider: "CodeBuild"
+              RunOrder: 1
+              Configuration:
+                ProjectName: !Ref PackDevBinariesProject
+
+          - Name: "TestPackageBinaries"
+            Actions:
+            - Name: "TestPackageBinaries"
+              InputArtifacts: 
+                - Name: "SourceArtifact"
+              OutputArtifacts:
+                - Name: "TestPackageBinariesArtifact"
+              ActionTypeId:
+                Version: '1'
+                Owner: "AWS"
+                Category: "Build"
+                Provider: "CodeBuild"
+              RunOrder: 1
+              Configuration:
+                ProjectName: !Ref PackTestBinariesProject
+
+          - Name: "PrdPackageBinaries"
             Actions:
             - Name: "TestBuild"
               InputArtifacts: 
@@ -95,4 +193,4 @@ Resources:
                 Provider: "CodeBuild"
               RunOrder: 1
               Configuration:
-                ProjectName: !Ref PackBinariesProject
+                ProjectName: !Ref PackProductionBinariesProject
